@@ -1,0 +1,40 @@
+- name: install the rinetd bbr for openvz
+  hosts: servers 
+  gather_facts: false
+  tasks:
+    - name: APT install packages
+      apt:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - curl
+        - iptables
+    - name: Download the rinetd bbr script
+      get_url:
+        url: https://raw.githubusercontent.com/linhua55/lkl_study/master/get-rinetd.sh
+        dest: /tmp
+        validate_certs: no
+        mode: 0755
+        force: yes
+    - name: Change the script for modifying ports to speed up
+      lineinfile:
+        path: /tmp/get-rinetd.sh
+        regexp: '^read -p'
+        line: '#read -p "Input ports you want to speed up: " PORTS </dev/tty'
+        state: present
+    - name: Ensure rinetd-bbr can startup after system boot
+      lineinfile:
+        path: /tmp/get-rinetd.sh
+        insertafter: '^Doc'
+        line: 'After=network.target'
+        state: present
+    - name: Apply the rinetd bbr script
+      shell: /tmp/get-rinetd.sh
+      args:
+        executable: /bin/bash
+      environment:
+        PORTS: "{{ PORTS }}"
+      register: apply_rinetd_bbr_script_result
+    - name: Output the shell execution result
+      debug:
+        msg: "{{ apply_rinetd_bbr_script_result.stdout }}"

@@ -1,0 +1,5 @@
+[servers]
+10.184.65.179
+
+[servers:vars]
+PORTS="80 443"
